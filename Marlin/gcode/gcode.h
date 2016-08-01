@@ -427,6 +427,9 @@ void gcode_get_destination() {
 #if ENABLED(Z_MIN_PROBE_REPEATABILITY_TEST)
   #include "calibrate/M48.h"      // Z Probe Repeatability Test
 #endif
+#if ENABLED(M100_FREE_MEMORY_WATCHER)
+  #include "calibrate/M100.h"     // Free Memory Watcher
+#endif
 #include "calibrate/M303.h"       // PID relay autotune
 #if ENABLED(MESH_BED_LEVELING)
   #include "calibrate/M420.h"     // Enable/Disable Mesh Bed Leveling

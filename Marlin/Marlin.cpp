@@ -267,10 +267,6 @@
  *
  */
 
-#if ENABLED(M100_FREE_MEMORY_WATCHER)
-  void gcode_M100();
-#endif
-
 #if ENABLED(SDSUPPORT)
   CardReader card;
 #endif
