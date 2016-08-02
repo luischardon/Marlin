@@ -114,3 +114,6 @@ applet/
 # Debug files
 *.dSYM/
 *.su
+
+# Visual Studio Code
+.vscode
