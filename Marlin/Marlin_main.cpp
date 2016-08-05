@@ -61,6 +61,7 @@
 #include "math.h"
 #include "nozzle.h"
 #include "duration_t.h"
+#include "types.h"
 
 #if ENABLED(USE_WATCHDOG)
   #include "watchdog.h"
@@ -373,9 +374,14 @@ static millis_t stepper_inactive_time = (DEFAULT_STEPPER_DEACTIVE_TIME) * 1000UL
   Stopwatch print_job_timer = Stopwatch();
 #endif
 
-// Buzzer
-#if HAS_BUZZER
-    Buzzer buzzer;
+// Buzzer - I2C on the LCD or a BEEPER_PIN
+#if ENABLED(LCD_USE_I2C_BUZZER)
+  #define BUZZ(d,f) lcd_buzz(d, f)
+#elif HAS_BUZZER
+  Buzzer buzzer;
+  #define BUZZ(d,f) buzzer.tone(d, f)
+#else
+  #define BUZZ(d,f) NOOP
 #endif
 
 static uint8_t target_extruder;
@@ -1796,10 +1802,6 @@ static void clean_up_after_endstop_or_probe_move() {
       }
     #endif
     float z_dest = LOGICAL_Z_POSITION(z_raise);
-
-    if (zprobe_zoffset < 0)
-      z_dest -= zprobe_zoffset;
-
     if (z_dest > current_position[Z_AXIS])
       do_blocking_move_to_z(z_dest);
   }
@@ -2048,7 +2050,7 @@ static void clean_up_after_endstop_or_probe_move() {
     if (endstops.z_probe_enabled == deploy) return false;
 
     // Make room for probe
-    do_probe_raise(_Z_RAISE_PROBE_DEPLOY_STOW);
+    do_probe_raise(_Z_PROBE_DEPLOY_HEIGHT);
 
     #if ENABLED(Z_PROBE_SLED)
       if (axis_unhomed_error(true, false, false)) { stop(); return true; }
@@ -2157,7 +2159,7 @@ static void clean_up_after_endstop_or_probe_move() {
     float old_feedrate_mm_m = feedrate_mm_m;
 
     // Ensure a minimum height before moving the probe
-    do_probe_raise(Z_RAISE_BETWEEN_PROBINGS);
+    do_probe_raise(Z_PROBE_TRAVEL_HEIGHT);
 
     // Move to the XY where we shall probe
     #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -2187,7 +2189,7 @@ static void clean_up_after_endstop_or_probe_move() {
       #if ENABLED(DEBUG_LEVELING_FEATURE)
         if (DEBUGGING(LEVELING)) SERIAL_ECHOLNPGM("> do_probe_raise");
       #endif
-      do_probe_raise(Z_RAISE_BETWEEN_PROBINGS);
+      do_probe_raise(Z_PROBE_TRAVEL_HEIGHT);
     }
 
     if (verbose_level > 2) {
@@ -2520,7 +2522,7 @@ static void homeaxis(AxisEnum axis) {
         SYNC_PLAN_POSITION_KINEMATIC();
       }
 
-      feedrate_mm_m = MMM_TO_MMS(retract_recover_feedrate_mm_s);
+      feedrate_mm_m = MMS_TO_MMM(retract_recover_feedrate_mm_s);
       float move_e = swapping ? retract_length_swap + retract_recover_length_swap : retract_length + retract_recover_length;
       current_position[E_AXIS] -= move_e / volumetric_multiplier[active_extruder];
       sync_plan_position_e();
@@ -2965,7 +2967,7 @@ inline void gcode_G28() {
 
       if (home_all_axis || homeX || homeY) {
         // Raise Z before homing any other axes and z is not already high enough (never lower z)
-        destination[Z_AXIS] = LOGICAL_Z_POSITION(MIN_Z_HEIGHT_FOR_HOMING);
+        destination[Z_AXIS] = LOGICAL_Z_POSITION(Z_HOMING_HEIGHT);
         if (destination[Z_AXIS] > current_position[Z_AXIS]) {
 
           #if ENABLED(DEBUG_LEVELING_FEATURE)
@@ -3046,7 +3048,7 @@ inline void gcode_G28() {
           if (home_all_axis) {
 
             /**
-             * At this point we already have Z at MIN_Z_HEIGHT_FOR_HOMING height
+             * At this point we already have Z at Z_HOMING_HEIGHT height
              * No need to move Z any more as this height should already be safe
              * enough to reach Z_SAFE_HOMING XY positions.
              * Just make sure the planner is in sync.
@@ -3210,10 +3212,10 @@ inline void gcode_G28() {
     feedrate_mm_m = homing_feedrate_mm_m[X_AXIS];
 
     current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-      #if Z_RAISE_BETWEEN_PROBINGS > MIN_Z_HEIGHT_FOR_HOMING
-        + Z_RAISE_BETWEEN_PROBINGS
-      #elif MIN_Z_HEIGHT_FOR_HOMING > 0
-        + MIN_Z_HEIGHT_FOR_HOMING
+      #if Z_PROBE_TRAVEL_HEIGHT > Z_HOMING_HEIGHT
+        + Z_PROBE_TRAVEL_HEIGHT
+      #elif Z_HOMING_HEIGHT > 0
+        + Z_HOMING_HEIGHT
       #endif
     ;
     line_to_current_position();
@@ -3222,7 +3224,7 @@ inline void gcode_G28() {
     current_position[Y_AXIS] = LOGICAL_Y_POSITION(y);
     line_to_current_position();
 
-    #if Z_RAISE_BETWEEN_PROBINGS > 0 || MIN_Z_HEIGHT_FOR_HOMING > 0
+    #if Z_PROBE_TRAVEL_HEIGHT > 0 || Z_HOMING_HEIGHT > 0
       current_position[Z_AXIS] = LOGICAL_Z_POSITION(MESH_HOME_SEARCH_Z);
       line_to_current_position();
     #endif
@@ -3318,10 +3320,10 @@ inline void gcode_G28() {
         else {
           // One last "return to the bed" (as originally coded) at completion
           current_position[Z_AXIS] = MESH_HOME_SEARCH_Z
-            #if Z_RAISE_BETWEEN_PROBINGS > MIN_Z_HEIGHT_FOR_HOMING
-              + Z_RAISE_BETWEEN_PROBINGS
-            #elif MIN_Z_HEIGHT_FOR_HOMING > 0
-              + MIN_Z_HEIGHT_FOR_HOMING
+            #if Z_PROBE_TRAVEL_HEIGHT > Z_HOMING_HEIGHT
+              + Z_PROBE_TRAVEL_HEIGHT
+            #elif Z_HOMING_HEIGHT > 0
+              + Z_HOMING_HEIGHT
             #endif
           ;
           line_to_current_position();
@@ -3655,7 +3657,7 @@ inline void gcode_G28() {
 
     #endif // !AUTO_BED_LEVELING_GRID
 
-    // Raise to _Z_RAISE_PROBE_DEPLOY_STOW. Stow the probe.
+    // Raise to _Z_PROBE_DEPLOY_HEIGHT. Stow the probe.
     if (STOW_PROBE()) return;
 
     // Restore state after probing
@@ -5657,7 +5659,7 @@ inline void gcode_M226() {
     // Limits the tone duration to 0-5 seconds.
     NOMORE(duration, 5000);
 
-    buzzer.tone(duration, frequency);
+    BUZZ(duration, frequency);
   }
 
 #endif // HAS_BUZZER
@@ -6129,9 +6131,7 @@ inline void gcode_M428() {
         SERIAL_ERROR_START;
         SERIAL_ERRORLNPGM(MSG_ERR_M428_TOO_FAR);
         LCD_ALERTMESSAGEPGM("Err: Too far!");
-        #if HAS_BUZZER
-          buzzer.tone(200, 40);
-        #endif
+        BUZZ(200, 40);
         err = true;
         break;
       }
@@ -6142,10 +6142,8 @@ inline void gcode_M428() {
     SYNC_PLAN_POSITION_KINEMATIC();
     report_current_position();
     LCD_MESSAGEPGM(MSG_HOME_OFFSETS_APPLIED);
-    #if HAS_BUZZER
-      buzzer.tone(200, 659);
-      buzzer.tone(200, 698);
-    #endif
+    BUZZ(200, 659);
+    BUZZ(200, 698);
   }
 }
 
@@ -6327,7 +6325,7 @@ inline void gcode_M503() {
       #if HAS_BUZZER
         millis_t ms = millis();
         if (ms >= next_tick) {
-          buzzer.tone(300, 2000);
+          BUZZ(300, 2000);
           next_tick = ms + 2500; // Beep every 2.5s while waiting
         }
       #endif
@@ -8470,7 +8468,7 @@ void idle(
     print_job_timer.tick();
   #endif
 
-  #if HAS_BUZZER
+  #if HAS_BUZZER && PIN_EXISTS(BEEPER)
     buzzer.tick();
   #endif
 }
