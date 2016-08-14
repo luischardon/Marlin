@@ -126,11 +126,11 @@
 
 // Optional custom name for your RepStrap or other custom machine
 // Displayed in the LCD "Ready" message
-#define CUSTOM_MACHINE_NAME "Kasmeer Meade"
+#define CUSTOM_MACHINE_NAME "Kasmeer"
 
 // Define this to set a unique identifier for this printer, (Used by some programs to differentiate between machines)
 // You can use an online service to generate a random UUID. (eg http://www.uuidgenerator.net/version4)
-//#define MACHINE_UUID "00000000-0000-0000-0000-000000000000"
+//#define MACHINE_UUID "b596c071-84b6-4a7c-8ff5-8ef536644f08"
 
 // This defines the number of extruders
 // :[1,2,3,4]
