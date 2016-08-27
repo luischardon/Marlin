@@ -285,10 +285,14 @@
   #define K1 0.95 //smoothing factor within the PID
 
   // If you are using a pre-configured hotend then you can use one of the value sets by uncommenting it
-  // Autotune
-  #define  DEFAULT_Kp 21.70
-  #define  DEFAULT_Ki 1.21
-  #define  DEFAULT_Kd 97.06
+  // Autotune 200 x8
+  //#define  DEFAULT_Kp 21.70
+  //#define  DEFAULT_Ki 1.21
+  //#define  DEFAULT_Kd 97.06
+  // Autotune 190 x10
+  #define  DEFAULT_Kp 17.92
+  #define  DEFAULT_Ki 0.96
+  #define  DEFAULT_Kd 83.24
   
   // Ultimaker
   //#define  DEFAULT_Kp 22.2
