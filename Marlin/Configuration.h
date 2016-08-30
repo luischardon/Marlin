@@ -257,7 +257,7 @@
 // When temperature exceeds max temp, your heater will be switched off.
 // This feature exists to protect your hotend from overheating accidentally, but *NOT* from thermistor short/failure!
 // You should use MINTEMP for thermistor short/failure protection.
-#define HEATER_0_MAXTEMP 270
+#define HEATER_0_MAXTEMP 245
 #define HEATER_1_MAXTEMP 245
 #define HEATER_2_MAXTEMP 245
 #define HEATER_3_MAXTEMP 245
@@ -273,7 +273,7 @@
 #define BANG_MAX 255 // limits current to nozzle while in bang-bang mode; 255=full current
 #define PID_MAX BANG_MAX // limits current to nozzle while PID is active (see PID_FUNCTIONAL_RANGE below); 255=full current
 #if ENABLED(PIDTEMP)
-  //#define PID_AUTOTUNE_MENU // Add PID Autotune to the LCD "Temperature" menu to run M303 and apply the result.
+  #define PID_AUTOTUNE_MENU // Add PID Autotune to the LCD "Temperature" menu to run M303 and apply the result.
   //#define PID_DEBUG // Sends debug data to the serial port.
   //#define PID_OPENLOOP 1 // Puts PID in open loop. M104/M140 sets the output power from 0 to PID_MAX
   //#define SLOW_PWM_HEATERS // PWM with very low frequency (roughly 0.125Hz=8s) and minimum state time of approximately 1s useful for heaters driven by a relay
@@ -290,9 +290,13 @@
   //#define  DEFAULT_Ki 1.21
   //#define  DEFAULT_Kd 97.06
   // Autotune 190 x10
-  #define  DEFAULT_Kp 17.92
-  #define  DEFAULT_Ki 0.96
-  #define  DEFAULT_Kd 83.24
+  //#define  DEFAULT_Kp 17.92
+  //#define  DEFAULT_Ki 0.96
+  //#define  DEFAULT_Kd 83.24
+  // Autotune 190 x10 @ center with fan on
+  #define  DEFAULT_Kp 20.47
+  #define  DEFAULT_Ki 1.17
+  #define  DEFAULT_Kd 89.56
   
   // Ultimaker
   //#define  DEFAULT_Kp 22.2
@@ -790,7 +794,7 @@
 // M501 - reads parameters from EEPROM (if you need reset them after you changed them temporarily).
 // M502 - reverts to the default "factory settings".  You still need to store them in EEPROM afterwards if you want to.
 //define this to enable EEPROM support
-//#define EEPROM_SETTINGS
+#define EEPROM_SETTINGS
 
 #if ENABLED(EEPROM_SETTINGS)
   // To disable EEPROM Serial responses and decrease program space by ~1700 byte: comment this out:
