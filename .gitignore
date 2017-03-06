@@ -115,5 +115,9 @@ applet/
 *.dSYM/
 *.su
 
+#PlatformIO files/dirs
+.pioenvs
+.piolib
+
 # Visual Studio Code
 .vscode
